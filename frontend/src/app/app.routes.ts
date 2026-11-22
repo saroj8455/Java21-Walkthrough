@@ -9,5 +9,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
+  {
+    path: 'transactions',
+    title: 'Transactions | Java 21 Walkthrough',
+    loadComponent: () =>
+      import('./features/transactions/transactions-page.component').then((m) => m.TransactionsPageComponent),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

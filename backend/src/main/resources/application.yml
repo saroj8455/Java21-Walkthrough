@@ -6,6 +6,9 @@
 server:
   port: ${SERVER_PORT:8080}
   shutdown: graceful            # finish in-flight requests on SIGTERM (docker stop)
+  tomcat:
+    # Let Tomcat read (and reject cleanly) bodies above the multipart limit instead of resetting the connection.
+    max-swallow-size: 10MB
 
 spring:
   application:
@@ -21,6 +24,22 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/walkthrough}
     username: ${DB_USERNAME:walkthrough}
     password: ${DB_PASSWORD:walkthrough}
+    # HikariCP = the connection pool (like pg.Pool). Imports may use at most
+    # app.import.max-concurrent-imports of these, so reads always have free connections.
+    hikari:
+      pool-name: walkthrough-pool
+      maximum-pool-size: 10
+      connection-timeout: 5000   # ms - fail fast instead of queueing requests forever
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+  data:
+    web:
+      pageable:
+        max-page-size: 100       # clients cannot request ?size=1000000
 
   jpa:
     # validate = Hibernate checks entities match the tables but NEVER changes the schema.
@@ -39,6 +58,14 @@ spring:
   mvc:
     problemdetails:
       enabled: true              # errors as RFC 7807 JSON (type/title/status/detail)
+
+# Our own settings, bound to the ImportProperties record (type-safe config).
+app:
+  import:
+    max-concurrent-imports: ${IMPORT_MAX_CONCURRENT:3}   # bulkhead size
+    acquire-timeout: 5s                                  # how long an upload waits for a free slot
+    batch-size: 500                                      # rows per JDBC batch insert
+    max-rows: 50000                                      # protect memory from huge files
 
 management:
   endpoints:

@@ -1,0 +1,21 @@
+.table-scroll {
+  max-height: 560px;
+  overflow: auto;
+}
+
+.type {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #ffebee;
+  color: #b71c1c;
+
+  &.credit {
+    background: #e8f5e9;
+    color: #1b5e20;
+  }
+}
+
+.credit-amount {
+  color: #1b5e20;
+}

@@ -1,0 +1,66 @@
+<!-- Row 1: search, date range, type -->
+<div class="d-flex flex-wrap align-items-center gap-3">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-grow-1 search">
+    <mat-label>Search details, transaction id or UTR</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput [value]="store.search()" (input)="onSearch($any($event.target).value)" />
+    @if (store.search()) {
+      <button matSuffix mat-icon-button aria-label="Clear search" (click)="onSearch('')">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="dates">
+    <mat-label>Date range</mat-label>
+    <mat-date-range-input [rangePicker]="picker">
+      <input matStartDate placeholder="From" [value]="fromDate()" (dateChange)="onFromDate($event.value)" />
+      <input matEndDate placeholder="To" [value]="toDate()" (dateChange)="onToDate($event.value)" />
+    </mat-date-range-input>
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-date-range-picker #picker />
+  </mat-form-field>
+
+  <mat-button-toggle-group [value]="store.type()" (change)="onType($event.value)" aria-label="Transaction type">
+    <mat-button-toggle [value]="null">All</mat-button-toggle>
+    <mat-button-toggle value="DEBIT">Debit</mat-button-toggle>
+    <mat-button-toggle value="CREDIT">Credit</mat-button-toggle>
+  </mat-button-toggle-group>
+</div>
+
+<!-- Row 2: quick-filter chips -->
+<div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+  @if (periods().length) {
+    <span class="small text-muted me-1">Period</span>
+    <mat-chip-listbox aria-label="Financial year" (change)="onPeriod($event)">
+      @for (fy of periods(); track fy.label) {
+        <mat-chip-option [value]="fy" [selected]="store.isFinancialYear(fy)">
+          {{ fy.label }} <span class="count">{{ fy.count }}</span>
+        </mat-chip-option>
+      }
+    </mat-chip-listbox>
+  }
+
+  <span class="small text-muted ms-md-3 me-1">Amount</span>
+  <mat-chip-listbox aria-label="Amount range" (change)="onAmount($event)">
+    @for (range of amountRanges; track range.label) {
+      <mat-chip-option [value]="range" [selected]="store.isAmountRange(range)">{{ range.label }}</mat-chip-option>
+    }
+  </mat-chip-listbox>
+</div>
+
+<!-- Row 3: active filters (removable) -->
+@if (store.isFiltered()) {
+  <div class="d-flex flex-wrap align-items-center gap-2 mt-3 active">
+    <mat-icon class="filter-icon">filter_alt</mat-icon>
+    <mat-chip-set aria-label="Active filters">
+      @for (chip of store.chips(); track chip.key) {
+        <mat-chip highlighted color="primary" (removed)="store.remove(chip.key)">
+          {{ chip.label }}
+          <button matChipRemove [attr.aria-label]="'Remove ' + chip.label"><mat-icon>cancel</mat-icon></button>
+        </mat-chip>
+      }
+    </mat-chip-set>
+    <button mat-button color="primary" (click)="store.clear()">Clear all</button>
+  </div>
+}

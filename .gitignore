@@ -1,6 +1,10 @@
 # Secrets / local env
 .env
 
+# PRIVATE financial data - never commit real bank/UPI statements to this public repo
+PhonePe transactions/
+invalid_csv_statements*.csv
+
 # Java / Maven
 backend/target/
 *.class

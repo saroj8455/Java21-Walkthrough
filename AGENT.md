@@ -32,6 +32,9 @@ Keep entries short; dates in ISO format (YYYY-MM-DD).
 ## Guardrails
 - Don't change the stack (Angular 17, Material, Bootstrap utilities, Java 21, Spring Boot, Postgres) without asking.
 - Don't edit an already-applied Flyway migration. Add a new one.
+- **Personal data:** `PhonePe transactions/` contains the user's real bank statement. Never commit it, never paste
+  its rows into code/tests/docs/chat output (print counts and reasons only). Use synthetic fixtures in tests.
+- Load tests or experiments that write to the DB must clean up their own rows afterwards and say so.
 - Don't commit `.env` or secrets. Don't run `docker compose down -v` (wipes data) without telling the user.
 - Git: public repo https://github.com/saroj8455/Java21-Walkthrough, default branch `main`.
   Commit/push only when the user asks; use a feature branch (`feature/<name>`) for new work.

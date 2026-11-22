@@ -8,7 +8,11 @@ A **learning project**: a full-stack app for an engineer who is experienced in *
 and is **new to Java**. Every change must also *teach*: comment the code, compare to Angular/Node concepts,
 and update the docs in [docs/](docs/).
 
-Domain: simple **Projects → Tasks** tracker. The first feature is a dashboard **summary**.
+Domain: simple **Projects → Tasks** tracker with a dashboard **summary**, plus a **bank statement import**
+(PhonePe CSV → `bank_transactions`) with a transactions browser.
+
+> ⚠️ **Privacy:** `PhonePe transactions/` in the repo root holds the user's REAL statement. It is gitignored.
+> Never commit it, never copy its contents into code, tests, docs or logs. Tests use synthetic data only.
 
 ## Stack (fixed — do not change without asking the user)
 | Layer     | Tech |
@@ -40,8 +44,9 @@ Local machine: Windows 11, Java 21 (Temurin) installed, **no Maven installed**, 
 Public GitHub repo: https://github.com/saroj8455/Java21-Walkthrough (default branch `main`).
 
 ## URLs
-- App: http://localhost:4200
-- API: http://localhost:8080/api/v1/summary
+- App: http://localhost:4200 (dashboard) and http://localhost:4200/transactions (upload + browse)
+- API: http://localhost:8080/api/v1/summary, `/api/v1/transactions`, `/api/v1/transactions/imports`
+  (full list in [docs/05-csv-import-feature.md](docs/05-csv-import-feature.md))
 - Swagger UI: http://localhost:8080/swagger-ui.html (also proxied at :4200)
 - Health: http://localhost:8080/actuator/health
 - pgAdmin: http://localhost:5050 (server pre-registered; DB password `walkthrough`)
@@ -52,17 +57,22 @@ backend/                       Spring Boot API
   src/main/java/com/walkthrough/api/
     WalkthroughApiApplication  entry point
     config/                    @Configuration beans (Clock, ...)
-    common/                    cross-cutting: GlobalExceptionHandler (RFC 7807 ProblemDetail)
+    common/                    GlobalExceptionHandler (ProblemDetail), BadRequest/NotFound exceptions, PageResponse<T>
     project/                   Project entity, repository, query projections
     task/                      Task entity, enums, repository, query projections
     summary/                   feature: controller -> service -> dto/
+    transaction/               BankTransaction entity, read API (search w/ Specifications, stats), dto/
+      importing/               CSV upload: controller, service (bulkhead), parser (pure), writer (@Transactional,
+                               JDBC batch + ON CONFLICT), invalid-CSV exporter, ImportProperties (app.import.*)
   src/main/resources/
     application.yml            config (env vars with defaults)
     db/migration/V*.sql        Flyway migrations (schema + seed)
   src/test/java/...            JUnit 5 + Mockito + MockMvc tests
 frontend/                      Angular 17 app
-  src/app/core/                models (TS mirrors of DTOs) + services (HttpClient)
+  src/app/core/                models (TS mirrors of DTOs), services (HttpClient), utils/http-error.ts
   src/app/features/<feature>/  routed, lazy-loaded standalone components
+    dashboard/                 summary page
+    transactions/              page (container) + statement-upload, transaction-table, import-history
   nginx.conf                   serves SPA + proxies /api to backend
 docker/pgadmin/servers.json    pgAdmin pre-registered server
 docs/                          learning guide for the user (keep updated!)
@@ -79,7 +89,15 @@ docs/                          learning guide for the user (keep updated!)
 - Enums stored as `@Enumerated(EnumType.STRING)` + DB `CHECK` constraint.
 - Read methods `@Transactional(readOnly = true)`; use JPQL `select new ...Record(...)` for aggregates.
 - Inject `java.time.Clock` instead of calling `now()` directly (testability).
-- Errors → `ProblemDetail` via `GlobalExceptionHandler`.
+- Errors → `ProblemDetail` via `GlobalExceptionHandler`. Throw `BadRequestException` / `ResourceNotFoundException`
+  (or a subclass) from services; never build HTTP responses there.
+- Bulk writes → `JdbcTemplate.batchUpdate` inside a `@Transactional` method of a *separate* bean
+  (self-invocation bypasses the proxy). Keep parsing/IO outside transactions.
+- Expensive endpoints that can be hit concurrently → guard with a bulkhead (see `ImportConcurrencyLimiter`).
+- Money = `BigDecimal` / `NUMERIC(14,2)`. Paged endpoints return `PageResponse<T>` and whitelist sort fields.
+- Transactions read endpoints all accept the same `TransactionFilter` record → one `Specification`. New
+  filter fields go in the record + `TransactionSpecifications` + frontend `TransactionFilter`/store/`toParams`.
+  Filtered aggregates live in `TransactionAnalyticsRepositoryImpl` (Criteria API).
 - API base path `/api/v1/...`. Document endpoints with `@Operation`/`@Tag`.
 - Every new service gets a Mockito unit test; every new controller a `@WebMvcTest`.
 
@@ -90,6 +108,14 @@ docs/                          learning guide for the user (keep updated!)
 - UI = Angular Material components. Layout/spacing = Bootstrap classes (`row`, `col-*`, `d-flex`, `gap-*`, `mb-*`).
   **Do not** import full `bootstrap.css` or Bootstrap JS/components.
 - API URLs are relative (`environment.apiBaseUrl = '/api/v1'`) → no CORS needed.
+- `provideHttpClient()` WITHOUT `withFetch()` — fetch cannot report upload progress.
+- Error text via `core/utils/http-error.ts` `toErrorMessage()` (reads ProblemDetail `detail`, handles 0/413/429).
+- Signal inputs/outputs (`input()`, `output()`); server-side tables: signals → `computed` query →
+  `toObservable` → `debounceTime` + `distinctUntilChanged` + `switchMap` → `toSignal` (see `transaction-table.component.ts`).
+- Shared page state = a signal store `@Injectable()` provided in the PAGE's `providers` (see `transaction-filter.store.ts`),
+  not `providedIn: 'root'`.
+- Money in the UI: `inr` pipe / `formatInr` (en-IN grouping). Dates to/from the API: `toIsoDate`/`parseIsoDate`
+  (never `toISOString()` — UTC shift in IST).
 - TS interfaces in `core/models` must mirror backend DTOs.
 
 **Docs** — after each feature: update [MEMORY.md](MEMORY.md) (status/log/next), add or extend a lesson in [docs/](docs/).
@@ -98,5 +124,9 @@ docs/                          learning guide for the user (keep updated!)
 - If you change entity fields, add a migration, or the app fails at startup with a schema validation error.
 - Seed data dates are relative to `CURRENT_DATE` at first DB init; `docker compose down -v` to re-seed.
 - pgAdmin asks for the DB password the first time (`walkthrough`), with a "save password" option.
+- Upload size limits exist in THREE places: nginx `client_max_body_size 10m`, Spring multipart `5MB`,
+  Tomcat `max-swallow-size 10MB`. Change them together.
+- Override import settings with env vars, e.g. `APP_IMPORT_MAXCONCURRENTIMPORTS=1 APP_IMPORT_ACQUIRETIMEOUT=0s`
+  (used to load-test the 429 path on a temporary second container on port 8081).
 - Frontend `package-lock.json` was generated in `node:20-alpine` (Linux); regenerate the same way if deps change:
   `docker run --rm -v "${PWD}/frontend:/app" -w /app node:20-alpine npm install --package-lock-only`

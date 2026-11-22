@@ -10,6 +10,7 @@ docker compose up -d --build
 | What | URL |
 |---|---|
 | Dashboard (Angular) | http://localhost:4200 |
+| Transactions (upload PhonePe CSV) | http://localhost:4200/transactions |
 | Summary API | http://localhost:8080/api/v1/summary |
 | Swagger UI | http://localhost:8080/swagger-ui.html |
 | pgAdmin | http://localhost:5050 (DB password: `walkthrough`) |

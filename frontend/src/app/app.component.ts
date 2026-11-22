@@ -17,6 +17,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       <a mat-button routerLink="/dashboard" routerLinkActive="active-link">
         <mat-icon>dashboard</mat-icon> Dashboard
       </a>
+      <a mat-button routerLink="/transactions" routerLinkActive="active-link">
+        <mat-icon>receipt_long</mat-icon> Transactions
+      </a>
       <a mat-button href="/swagger-ui.html" target="_blank" rel="noopener">
         <mat-icon>api</mat-icon> API Docs
       </a>

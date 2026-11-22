@@ -1,0 +1,83 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Upload PhonePe statement</mat-card-title>
+    <mat-card-subtitle>CSV export, up to 5 MB. Re-uploading the same file is safe - duplicates are skipped.</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content class="pt-3">
+    <!-- Drop zone: a <label> for the hidden file input, so clicking anywhere opens the picker -->
+    <label
+      class="drop-zone d-flex flex-column align-items-center justify-content-center gap-2 p-4 mb-3"
+      [class.dragging]="dragging()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="dragging.set(false)"
+      (drop)="onDrop($event)"
+    >
+      <mat-icon class="drop-icon">upload_file</mat-icon>
+      @if (file(); as f) {
+        <strong>{{ f.name }}</strong>
+        <span class="small text-muted">{{ f.size / 1024 | number: '1.0-1' }} KB</span>
+      } @else {
+        <span>Drag & drop a <strong>.csv</strong> here, or click to browse</span>
+      }
+      <input type="file" accept=".csv,text/csv" hidden (change)="onFileInput($event)" />
+    </label>
+
+    @if (uploading()) {
+      <mat-progress-bar class="mb-3" [mode]="sending() ? 'determinate' : 'indeterminate'" [value]="progress()" />
+      <div class="small text-muted mb-3">{{ statusText() }}</div>
+    }
+
+    @if (error(); as message) {
+      <div class="message error d-flex align-items-center gap-2 p-2 mb-3">
+        <mat-icon>error_outline</mat-icon><span>{{ message }}</span>
+      </div>
+    }
+
+    @if (result(); as r) {
+      <div class="message success p-3 mb-3">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <mat-icon>task_alt</mat-icon>
+          <strong>{{ r.fileName }}</strong>
+          <span class="small text-muted">import #{{ r.importId }} &middot; {{ r.durationMs }} ms</span>
+        </div>
+        <div class="d-flex flex-wrap gap-3">
+          <span class="pill">Rows: {{ r.totalRows }}</span>
+          <span class="pill ok">Imported: {{ r.importedRows }}</span>
+          <span class="pill" matTooltip="Already saved earlier - skipped">Duplicates: {{ r.duplicateRows }}</span>
+          <span class="pill bad">Invalid: {{ r.invalidRows }}</span>
+        </div>
+      </div>
+
+      @if (r.invalidRows > 0) {
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+          <span class="small">First {{ r.invalidRowsPreview.length }} rejected rows</span>
+          @if (r.invalidCsvUrl) {
+            <a mat-stroked-button color="warn" [href]="r.invalidCsvUrl" download="invalid_csv_statements.csv">
+              <mat-icon>download</mat-icon> invalid_csv_statements.csv
+            </a>
+          }
+        </div>
+        <table mat-table [dataSource]="r.invalidRowsPreview" class="w-100 preview">
+          <ng-container matColumnDef="lineNumber">
+            <th mat-header-cell *matHeaderCellDef>Line</th>
+            <td mat-cell *matCellDef="let row">{{ row.lineNumber }}</td>
+          </ng-container>
+          <ng-container matColumnDef="reason">
+            <th mat-header-cell *matHeaderCellDef>Reason</th>
+            <td mat-cell *matCellDef="let row" [matTooltip]="row.rawRecord">{{ row.reason }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="previewColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: previewColumns"></tr>
+        </table>
+      }
+    }
+  </mat-card-content>
+
+  <mat-card-actions align="end" class="gap-2">
+    <button mat-button (click)="clear()" [disabled]="uploading()">Clear</button>
+    <button mat-flat-button color="primary" (click)="upload()" [disabled]="!file() || uploading()">
+      <mat-icon>cloud_upload</mat-icon> Upload
+    </button>
+  </mat-card-actions>
+</mat-card>

@@ -2,6 +2,7 @@ package com.walkthrough.api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 /**
  * Application entry point - the Java equivalent of Angular's {@code main.ts} / Node's {@code server.js}.
@@ -15,8 +16,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *       in this package and sub-packages and registers them in the DI container.</li>
  * </ul>
  * That's why every class lives under {@code com.walkthrough.api.*}: anything outside is not scanned.
+ *
+ * <p>{@code @ConfigurationPropertiesScan} finds {@code @ConfigurationProperties} records
+ * (e.g. {@code ImportProperties}) and binds application.yml values into them.
  */
 @SpringBootApplication
+@ConfigurationPropertiesScan
 public class WalkthroughApiApplication {
 
     public static void main(String[] args) {

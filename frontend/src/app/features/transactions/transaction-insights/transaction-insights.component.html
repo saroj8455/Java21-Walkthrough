@@ -1,0 +1,40 @@
+@if (error(); as message) {
+  <div class="text-danger small mb-2">{{ message }}</div>
+}
+
+<div class="row g-2 mb-3 kpis" [class.loading]="loading()">
+  @for (kpi of kpis(); track kpi.label) {
+    <div class="col-6 col-md-4 col-xl-2">
+      <mat-card class="h-100 kpi" [class]="'tone-' + kpi.tone">
+        <mat-card-content class="p-3">
+          <div class="d-flex align-items-center gap-1 label">
+            <mat-icon>{{ kpi.icon }}</mat-icon><span>{{ kpi.label }}</span>
+          </div>
+          <div class="value" [title]="kpi.value">{{ kpi.value }}</div>
+          <div class="hint">{{ kpi.hint }}</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  } @empty {
+    <div class="col-12 small text-muted">{{ loading() ? 'Calculating…' : '' }}</div>
+  }
+</div>
+
+@if (counterparties().length) {
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+    <span class="small text-muted me-1">Top counterparties</span>
+    <mat-chip-set aria-label="Top counterparties">
+      @for (c of counterparties(); track c.details) {
+        <mat-chip
+          [highlighted]="isActive(c)"
+          color="primary"
+          (click)="toggleCounterparty(c)"
+          [matTooltip]="c.details + ' · ' + c.count + ' transactions · ' + (c.total | inr)"
+          class="cp"
+        >
+          {{ c.name }} <span class="count">{{ c.count }}</span>
+        </mat-chip>
+      }
+    </mat-chip-set>
+  </div>
+}
