@@ -1,0 +1,17 @@
+/*
+ * Global styles.
+ * UI components  -> Angular Material (prebuilt indigo-pink theme, see angular.json "styles").
+ * Layout/spacing -> Bootstrap GRID + UTILITIES only (row/col-*, d-flex, gap-*, mb-3 ...).
+ *                   We deliberately do NOT load full bootstrap.css: its "Reboot" and component
+ *                   styles would fight with Material.
+ */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background: #f5f6fa;
+}

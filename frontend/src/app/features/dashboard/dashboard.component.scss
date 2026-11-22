@@ -1,0 +1,52 @@
+.stat-card {
+  border-left: 4px solid var(--tone);
+
+  &.tone-primary { --tone: #3f51b5; }
+  &.tone-success { --tone: #2e7d32; }
+  &.tone-warn    { --tone: #d32f2f; }
+  &.tone-neutral { --tone: #607d8b; }
+}
+
+.stat-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.stat-label {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.priority-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+
+  &.priority-high   { background: #d32f2f; }
+  &.priority-medium { background: #f9a825; }
+  &.priority-low    { background: #2e7d32; }
+}
+
+.progress-col {
+  width: 45%;
+}
+
+.rate {
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+.error-card {
+  border-left: 4px solid #d32f2f;
+}

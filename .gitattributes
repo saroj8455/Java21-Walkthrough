@@ -1,0 +1,8 @@
+# Keep LF line endings in the repo and working tree: files run inside Linux containers
+# (Dockerfiles, nginx.conf, SQL, shell) must not get Windows CRLF endings.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.jar binary

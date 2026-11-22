@@ -1,0 +1,90 @@
+# =====================================================================================
+# One command to run everything:   docker compose up -d --build
+#
+#   Service    URL                          What it is
+#   ---------  ---------------------------  ------------------------------------------
+#   frontend   http://localhost:4200        Angular 17 app served by nginx (+ /api proxy)
+#   backend    http://localhost:8080        Spring Boot API (Swagger: /swagger-ui.html)
+#   postgres   localhost:5432               PostgreSQL 16 database
+#   pgadmin    http://localhost:5050        DB admin UI
+#
+# Values come from .env (copy .env.example). ${VAR:-default} keeps it working without one.
+# Containers reach each other by SERVICE NAME (e.g. jdbc:postgresql://postgres:5432/...).
+# =====================================================================================
+name: java21-walkthrough
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: walkthrough-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-walkthrough}
+      POSTGRES_USER: ${POSTGRES_USER:-walkthrough}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-walkthrough}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data   # data survives `docker compose down`
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:8.14
+    container_name: walkthrough-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"                 # single-user desktop mode
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro   # pre-registers the DB server
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+    image: walkthrough-backend:latest
+    container_name: walkthrough-backend
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-walkthrough}
+      DB_USERNAME: ${POSTGRES_USER:-walkthrough}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-walkthrough}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy   # wait until Postgres accepts connections
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      start_period: 40s
+      retries: 10
+
+  frontend:
+    build:
+      context: ./frontend
+    image: walkthrough-frontend:latest
+    container_name: walkthrough-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  pgadmin-data:

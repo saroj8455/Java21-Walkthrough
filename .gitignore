@@ -1,0 +1,19 @@
+# Secrets / local env
+.env
+
+# Java / Maven
+backend/target/
+*.class
+*.log
+
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# IDEs / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db

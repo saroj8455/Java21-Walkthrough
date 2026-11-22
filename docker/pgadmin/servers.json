@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Walkthrough DB (docker)",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "walkthrough",
+      "Username": "walkthrough",
+      "SSLMode": "prefer"
+    }
+  }
+}
